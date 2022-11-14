@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 import pandas as pd
 import torch
+from albumentations.augmentations.transforms import Normalize
 
 from models.resnet_custom import resnet50_baseline
 
@@ -17,6 +18,9 @@ class Config:
 
         self.device_type = 'cuda:0'
         self.batch_size = 64
+
+        self.transform = Normalize(mean=(0.84823702, 0.77016022, 0.85043145), std=(0.13220921, 0.20896969, 0.10626152),
+                                   always_apply=True)
 
         self.csv_file_name = "./input/seed_patch/seed_patch_anno_4_256/seed.csv"
         self.feature_output_folder = "./input/seed_patch/seed_patch_anno_4_256/pt_files"
@@ -62,6 +66,7 @@ def gen_features(config: Config, patches: list[np.ndarray]) -> np.ndarray:
     batch = None
     with torch.no_grad():
         for idx, patch in enumerate(patches):
+            patch = config.transform(image=patch)['image']
             patch = patch.transpose(2, 0, 1)
             patch = np.expand_dims(patch, axis=0)
             patch = torch.from_numpy(patch).float().to(device)
@@ -73,9 +78,9 @@ def gen_features(config: Config, patches: list[np.ndarray]) -> np.ndarray:
                 feature = model(batch)
                 batch = None
                 if features is None:
-                    features = feature.cpu().numpy()
+                    features = feature.cpu()
                 else:
-                    features = np.concatenate([features, feature.cpu().numpy()], axis=0)
+                    features = torch.cat([features, feature.cpu()], dim=0)
     return features
 
 
