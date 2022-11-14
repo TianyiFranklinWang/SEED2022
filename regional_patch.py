@@ -18,6 +18,7 @@ class Config:
         self.image_folder = "./input/seed_processed_data"
         self.classes = ['T0', 'T1', 'T2', 'T3', 'Tis', 'test']
         self.annotated_classes = ['T1', 'T2', 'T3', 'Tis', 'test']
+        self.no_thresh_classes = ['T2', 'Tis']  # Some WSIs has black marks which jam the threshold method
         self.annotation_folder_postfix = '_json'
         self.sample_dict = dict()
         self.annotation_dict = dict()
@@ -216,13 +217,14 @@ def select_patch(config: Config, mask_patches: np.ndarray, thresh_patches: np.nd
 
 
 def save_patches(config, cls, sample_name, wsi_patches, select_ids, anno_id=None):
-    if anno_id is None:
-        sample_folder = os.path.join(config.output_folder, cls, sample_name.split('.')[0])
-    else:
-        sample_folder = os.path.join(config.output_folder, cls, sample_name.split('.')[0] + f'_Annotation{anno_id}')
-    create_none_exist_folder(sample_folder)
-    for idx in select_ids:
-        cv2.imwrite(os.path.join(sample_folder, f"{sample_name.split('.')[0]}_{idx}.png"), wsi_patches[idx])
+    if len(select_ids) > 0:
+        if anno_id is None:
+            sample_folder = os.path.join(config.output_folder, cls, sample_name.split('.')[0])
+        else:
+            sample_folder = os.path.join(config.output_folder, cls, sample_name.split('.')[0] + f'_Annotation{anno_id}')
+        create_none_exist_folder(sample_folder)
+        for idx in select_ids:
+            cv2.imwrite(os.path.join(sample_folder, f"{sample_name.split('.')[0]}_{idx}.png"), wsi_patches[idx])
 
 
 def patch_main(config, cls, sample_name):
@@ -241,7 +243,10 @@ def patch_main(config, cls, sample_name):
 
     wsi = resize_wsi(wsi, config.scale)
     wsi = pad_wsi(config, wsi, pad_value=255)
-    threshed_wsi = thresh_wsi(config, wsi)
+    if cls in config.no_thresh_classes:
+        threshed_wsi = np.ones_like(wsi, dtype=np.uint8)
+    else:
+        threshed_wsi = thresh_wsi(config, wsi)
     wsi_patches = gen_patch(wsi, config.patch_size)
     threshed_wsi_patches = gen_patch(threshed_wsi, config.patch_size)
 
