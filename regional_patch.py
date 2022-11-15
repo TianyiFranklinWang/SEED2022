@@ -224,7 +224,7 @@ def save_patches(config, cls, sample_name, wsi_patches, select_ids, anno_id=None
             sample_folder = os.path.join(config.output_folder, cls, sample_name.split('.')[0] + f'_Annotation{anno_id}')
         create_none_exist_folder(sample_folder)
         for idx in select_ids:
-            cv2.imwrite(os.path.join(sample_folder, f"{sample_name.split('.')[0]}_{idx}.png"), wsi_patches[idx])
+            tiff.imwrite(os.path.join(sample_folder, f"{sample_name.split('.')[0]}_{idx}.png"), wsi_patches[idx])
 
 
 def patch_main(config, cls, sample_name):
