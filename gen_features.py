@@ -2,9 +2,9 @@ import datetime
 import os
 import time
 
-import cv2
 import numpy as np
 import pandas as pd
+import tifffile as tiff
 import torch
 from albumentations.augmentations.transforms import Normalize
 
@@ -43,7 +43,7 @@ class PatchDataset:
                     bag_patches = os.listdir(os.path.join(self.patch_folder, cls, bag))
                     patch_dict[cls][bag] = list()
                     for patch_name in bag_patches:
-                        patch = cv2.imread(os.path.join(self.patch_folder, cls, bag, patch_name))
+                        patch = tiff.imread(os.path.join(self.patch_folder, cls, bag, patch_name))
                         patch_dict[cls][bag].append(patch)
         return classes, patch_dict
 
