@@ -19,6 +19,7 @@ class Config:
         self.sample_class = 'T0'
         self.bag_num = 58
         self.instance_sample_ratio = 0.5
+        self.min_instances = 8
 
         self.output_data_root = "./input/seed_vdataset"
 
@@ -55,18 +56,26 @@ if __name__ == "__main__":
     sample_df = sample_df.sample(n=config.bag_num, random_state=config.seed)
     keep_df = pd.concat([sample_df, keep_df], ignore_index=True)
     keep_df.drop_duplicates()
-    keep_df.to_csv(os.path.join(config.output_data_root, config.data_csv), index=False)
 
     for slide_id, label in zip(keep_df['slide_id'], keep_df['label']):
-        print(f"    - Select {label} {slide_id}")
+        print(f"    - Select {label} {slide_id}", end='')
         if label == config.sample_class:
             features = torch.load(os.path.join(config.data_root, config.pt_folder, f"{slide_id}.pt"))
             indices = torch.tensor(
-                random.sample(range(len(features)), k=math.floor(len(features) * config.instance_sample_ratio)))
+                random.sample(range(len(features)), k=math.ceil(len(features) * config.instance_sample_ratio)))
             features = features[indices, :]
             torch.save(features, os.path.join(config.output_data_root, config.pt_folder, f"{slide_id}.pt"))
+            print(f"    {math.ceil(len(features) * config.instance_sample_ratio)} samples saved")
         else:
-            shutil.copy(os.path.join(config.data_root, config.pt_folder, f"{slide_id}.pt"),
-                        os.path.join(config.output_data_root, config.pt_folder, f"{slide_id}.pt"))
+            features = torch.load(os.path.join(config.data_root, config.pt_folder, f"{slide_id}.pt"))
+            if features.shape[0] < config.min_instances:
+                keep_df = keep_df.loc[keep_df['slide_id'] != slide_id]
+                print(f"    {features.shape[0]} sample(s) dropped")
+            else:
+                shutil.copy(os.path.join(config.data_root, config.pt_folder, f"{slide_id}.pt"),
+                            os.path.join(config.output_data_root, config.pt_folder, f"{slide_id}.pt"))
+                print(f"    {features.shape[0]} samples saved")
+
+    keep_df.to_csv(os.path.join(config.output_data_root, config.data_csv), index=False)
 
     print(f"\nComplete in {str(datetime.timedelta(seconds=int(time.time() - start_time)))}.")
