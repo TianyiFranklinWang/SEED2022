@@ -2,9 +2,9 @@ import datetime
 import os
 import time
 
+import cv2
 import numpy as np
 import pandas as pd
-import tifffile as tiff
 import torch
 from albumentations.augmentations.transforms import Normalize
 
@@ -13,7 +13,7 @@ from models.resnet_custom import resnet50_baseline
 
 class Config:
     def __init__(self):
-        self.patch_folder = "./input/seed_patch/seed_patch_anno_4_256/train"
+        self.patch_folder = "./input/seed_patch/seed_patch_anno_4_256_fix/train"
         self.class_without_anno = ['T0']
 
         self.device_type = 'cuda:0'
@@ -22,8 +22,8 @@ class Config:
         self.transform = Normalize(mean=(0.84823702, 0.77016022, 0.85043145), std=(0.13220921, 0.20896969, 0.10626152),
                                    always_apply=True)
 
-        self.csv_file_name = "./input/seed_patch/seed_patch_anno_4_256/seed.csv"
-        self.feature_output_folder = "./input/seed_patch/seed_patch_anno_4_256/pt_files"
+        self.csv_file_name = "./input/seed_patch/seed_patch_anno_4_256_fix/seed.csv"
+        self.feature_output_folder = "./input/seed_patch/seed_patch_anno_4_256_fix/pt_files"
 
 
 class PatchDataset:
@@ -43,7 +43,8 @@ class PatchDataset:
                     bag_patches = os.listdir(os.path.join(self.patch_folder, cls, bag))
                     patch_dict[cls][bag] = list()
                     for patch_name in bag_patches:
-                        patch = tiff.imread(os.path.join(self.patch_folder, cls, bag, patch_name))
+                        patch = cv2.imread(os.path.join(self.patch_folder, cls, bag, patch_name))
+                        patch = cv2.cvtColor(patch, cv2.COLOR_BGR2RGB)
                         patch_dict[cls][bag].append(patch)
         return classes, patch_dict
 

@@ -18,7 +18,7 @@ class Config:
         self.image_folder = "./input/seed_processed_data"
         self.classes = ['T0', 'T1', 'T2', 'T3', 'Tis', 'test']
         self.annotated_classes = ['T1', 'T2', 'T3', 'Tis', 'test']
-        self.no_thresh_classes = ['T2', 'Tis']  # Some WSIs has black marks which jam the threshold method
+        self.no_thresh_classes = ['T2', 'Tis', 'test']  # Some WSIs has black marks which jam the threshold method
         self.annotation_folder_postfix = '_json'
         self.sample_dict = dict()
         self.annotation_dict = dict()
@@ -33,7 +33,7 @@ class Config:
         self.min_size = 16384
         self.connectivity = 8
 
-        self.output_folder = f"./input/seed_patch/seed_patch_anno_{self.scale}_{self.patch_size}"
+        self.output_folder = f"./input/seed_patch/seed_patch_anno_{self.scale}_{self.patch_size}_fix"
 
         self.gather_sample_and_annotation()
 
@@ -224,7 +224,8 @@ def save_patches(config, cls, sample_name, wsi_patches, select_ids, anno_id=None
             sample_folder = os.path.join(config.output_folder, cls, sample_name.split('.')[0] + f'_Annotation{anno_id}')
         create_none_exist_folder(sample_folder)
         for idx in select_ids:
-            tiff.imwrite(os.path.join(sample_folder, f"{sample_name.split('.')[0]}_{idx}.png"), wsi_patches[idx])
+            wsi_patches[idx] = cv2.cvtColor(wsi_patches[idx], cv2.COLOR_RGB2BGR)
+            cv2.imwrite(os.path.join(sample_folder, f"{sample_name.split('.')[0]}_{idx}.png"), wsi_patches[idx])
 
 
 def patch_main(config, cls, sample_name):
