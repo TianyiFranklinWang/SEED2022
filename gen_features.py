@@ -6,24 +6,32 @@ import cv2
 import numpy as np
 import pandas as pd
 import torch
+from albumentations import Compose
 from albumentations.augmentations.transforms import Normalize
+from albumentations.augmentations.geometric.resize import Resize
+from timm import create_model
 
 from models.resnet_custom import resnet50_baseline
 
 
 class Config:
     def __init__(self):
-        self.patch_folder = "./input/seed_patch/seed_patch_anno_4_256_fix/train"
+        self.patch_folder = "./input/seed_patch/seed_patch_anno_4_256_expand/train"
         self.class_without_anno = ['T0']
 
-        self.device_type = 'cuda:0'
-        self.batch_size = 64
+        self.model_type = 'beit_large_patch16_512'  # 'resnet50'
+        self.device_type = 'cuda:1'
+        self.batch_size = 2
+        self.transform = Compose(
+            [
+                Resize(height=512, width=512, interpolation=cv2.INTER_CUBIC, always_apply=True),
+                Normalize(mean=(0.84823702, 0.77016022, 0.85043145), std=(0.13220921, 0.20896969, 0.10626152),
+                          always_apply=True),
+            ]
+        )
 
-        self.transform = Normalize(mean=(0.84823702, 0.77016022, 0.85043145), std=(0.13220921, 0.20896969, 0.10626152),
-                                   always_apply=True)
-
-        self.csv_file_name = "./input/seed_patch/seed_patch_anno_4_256_fix/seed.csv"
-        self.feature_output_folder = "./input/seed_patch/seed_patch_anno_4_256_fix/pt_files"
+        self.csv_file_name = "./input/seed_patch/seed_patch_anno_4_256_expand/beit_seed.csv"
+        self.feature_output_folder = "./input/seed_patch/seed_patch_anno_4_256_expand/beit_pt_files"
 
 
 class PatchDataset:
@@ -33,7 +41,7 @@ class PatchDataset:
         self.classes, self.patch_dict = self.gather_patches()
 
     def gather_patches(self):
-        classes = os.listdir(self.patch_folder)
+        classes = [cls for cls in os.listdir(self.patch_folder) if os.path.isdir(os.path.join(self.patch_folder, cls))]
         patch_dict = dict()
         for cls in classes:
             patch_dict[cls] = dict()
@@ -60,7 +68,17 @@ def gen_features(config: Config, patches: list[np.ndarray]) -> np.ndarray:
         np.ndarray: Features generated from patches.
     """
     device = torch.device(config.device_type)
-    model = resnet50_baseline(pretrained=True).to(device)
+    if config.model_type == 'resnet50':
+        model = resnet50_baseline(pretrained=True).to(device)
+    elif config.model_type == 'beit_large_patch16_512':
+        model = create_model('beit_large_patch16_512', pretrained=True).to(device)
+
+        outputs = list()
+
+        def feature_hook(module, input, output):
+            outputs.append(output.clone().detach())
+
+        handle = model.fc_norm.register_forward_hook(feature_hook)
     model.eval()
 
     features = None
@@ -76,7 +94,12 @@ def gen_features(config: Config, patches: list[np.ndarray]) -> np.ndarray:
             else:
                 batch = torch.cat([batch, patch], dim=0)
             if batch.shape[0] == config.batch_size or (idx + 1) == len(patches):
-                feature = model(batch)
+                if config.model_type == 'resnet50':
+                    feature = model(batch)
+                elif config.model_type == 'beit_large_patch16_512':
+                    model(batch)
+                    feature = outputs.pop()
+
                 batch = None
                 if features is None:
                     features = feature.cpu()

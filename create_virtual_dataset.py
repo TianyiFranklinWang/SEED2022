@@ -13,15 +13,15 @@ import torch
 class Config:
     def __init__(self):
         self.seed = 42
-        self.data_root = "./input/seed_patch/seed_patch_anno_4_256"
-        self.data_csv = "seed.csv"
-        self.pt_folder = "pt_files"
+        self.data_root = "./input/seed_patch/seed_patch_anno_4_256_expand"
+        self.data_csv = "beit_seed.csv"
+        self.pt_folder = "beit_pt_files"
         self.sample_class = 'T0'
         self.bag_num = 58
         self.instance_sample_ratio = 0.5
         self.min_instances = 8
 
-        self.output_data_root = "./input/seed_vdataset"
+        self.output_data_root = "./input/seed_vdataset_expand_beit"
 
 
 def seed_everything(seed=42, rank=0):

@@ -1,0 +1,17 @@
+CUDA_VISIBLE_DEVICES=0 python clam_main.py \
+                        --drop_out \
+                        --lr 2e-4 \
+                        --k 1 \
+                        --label_frac 1.0 \
+                        --exp_code seed_clam_mb_no_es_no_fold_expand_dataset_beit_epoch5000 \
+                        --weighted_sample \
+                        --bag_loss ce \
+                        --inst_loss svm \
+                        --task custom \
+                        --model_type clam_mb \
+                        --model_size small \
+                        --log_data \
+                        --subtyping \
+                        --data_root_dir ./input/seed_vdataset_expand_beit \
+                        --max_epochs 5000 \
+                        --opt adam
