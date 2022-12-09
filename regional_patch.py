@@ -18,7 +18,7 @@ class Config:
         self.image_folder = "./input/seed_processed_data"
         self.classes = ['T0', 'T1', 'T2', 'T3', 'Tis', 'test']
         self.annotated_classes = ['T1', 'T2', 'T3', 'Tis', 'test']
-        self.no_thresh_classes = ['T2', 'Tis', 'test']  # Some WSIs has black marks which jam the threshold method
+        self.no_thresh_classes = ['T1', 'T2', 'T3', 'Tis', 'test']  # Some WSIs has black marks which jam the threshold method
         self.annotation_folder_postfix = '_json'
         self.sample_dict = dict()
         self.annotation_dict = dict()
@@ -33,7 +33,7 @@ class Config:
         self.min_size = 16384
         self.connectivity = 8
 
-        self.output_folder = f"./input/seed_patch/seed_patch_anno_{self.scale}_{self.patch_size}_fix"
+        self.output_folder = f"./input/seed_patch/seed_patch_anno_{self.scale}_{self.patch_size}_expand"
 
         self.gather_sample_and_annotation()
 
@@ -100,7 +100,7 @@ def extract_contours(json_file_path):
         points = context['points']
         for point in points:
             contour.append([int(point['x']), int(point['y'])])
-        contour = np.asarray(contour, dtype=np.int32)
+        contour = np.asarray(contour, dtype=np.int64)
         contours.append(contour)
     return contours
 
